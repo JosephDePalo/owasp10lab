@@ -1,13 +1,24 @@
 import subprocess
-
-from flask import Flask, render_template, request, redirect, flash, session
-from flask_sqlalchemy import SQLAlchemy
 from hashlib import sha256
+import datetime
+
+from flask import Flask, render_template, request, redirect, flash, make_response
+from flask_sqlalchemy import SQLAlchemy
+import jwt
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///test.db"
 app.secret_key = "73151537-033e-4ad1-8c71-5d14d57c6dc0"
 db = SQLAlchemy(app)
+
+
+def generate_jwt(identity):
+    payload = {
+        "id": identity,
+        "iat": datetime.datetime.now(),
+        "exp": datetime.datetime.now() + datetime.timedelta(minutes=30),
+    }
+    return jwt.encode(payload, key=None, algorithm="none")
 
 
 class User(db.Model):
@@ -39,8 +50,10 @@ def login():
 
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
-            session["user_id"] = user.id
-            return redirect(f"/dashboard/{user.id}")
+            resp = make_response(redirect(f"/dashboard/{user.id}"))
+            token = generate_jwt(user.id)
+            resp.set_cookie("access_token", token)
+            return resp
         else:
             return "Invalid username or password", 401
     else:
@@ -75,20 +88,24 @@ def register():
 def dashboard(id: int):
     user = User.query.get_or_404(id)
 
+    token = request.cookies.get("access_token")
+    if not token:
+        return "No access_token provided.", 401
+    token_payload = jwt.decode(token, options={"verify_signature": False})
+    if token_payload.get("id", -1) != id:
+        return "Unauthorized", 401
+
     if request.method == "POST":
-        if "user_id" in session:
-            if id == 1:
-                cmd = request.form["Command"]
-                result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-                flash(result.stdout)
-                flash(result.stderr)
-                return render_template("admin_dashboard.html", user=user)
-    if "user_id" in session:
         if id == 1:
+            cmd = request.form["Command"]
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            flash(result.stdout)
+            flash(result.stderr)
             return render_template("admin_dashboard.html", user=user)
-        return render_template("dashboard.html", user=user)
-    else:
-        return redirect("/login")
+
+    if id == 1:
+        return render_template("admin_dashboard.html", user=user)
+    return render_template("dashboard.html", user=user)
 
 
 if __name__ == "__main__":
