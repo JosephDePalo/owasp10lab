@@ -1,13 +1,11 @@
-from flask import Flask, render_template, request, redirect, flash
+from flask import Flask, render_template, request, redirect, flash, session
 from flask_sqlalchemy import SQLAlchemy
-from argon2 import PasswordHasher
+from hashlib import sha256
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///test.db"
 app.secret_key = "73151537-033e-4ad1-8c71-5d14d57c6dc0"
 db = SQLAlchemy(app)
-
-ph = PasswordHasher()
 
 
 class User(db.Model):
@@ -19,13 +17,11 @@ class User(db.Model):
         self.username = username
 
     def set_password(self, password: str):
-        self.password_hash = ph.hash(password)
+        self.password_hash = sha256(password.encode("utf-8")).hexdigest()
 
     def check_password(self, password: str) -> bool:
-        try:
-            return ph.verify(self.password_hash, password)
-        except Exception:
-            return False
+        hash_to_test = sha256(password.encode("utf-8")).hexdigest()
+        return hash_to_test == self.password_hash
 
 
 @app.route("/")
@@ -41,6 +37,7 @@ def login():
 
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
+            session["user_id"] = user.id
             return redirect(f"/dashboard/{user.id}")
         else:
             return "Invalid username or password", 401
@@ -75,7 +72,10 @@ def register():
 @app.route("/dashboard/<int:id>")
 def dashboard(id: int):
     user = User.query.get_or_404(id)
-    return render_template("dashboard.html", user=user)
+    if "user_id" in session:
+        return render_template("dashboard.html", user=user)
+    else:
+        return redirect("/login")
 
 
 if __name__ == "__main__":
