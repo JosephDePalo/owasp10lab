@@ -1,0 +1,24 @@
+
+{% extends 'base.html' %}
+
+{% block head%}
+<title>Admin Dashboard</title>
+{% endblock %}
+
+{% block body%}
+<h1>Welcome {{ user.username }}</h1>
+<form action="/dashboard/{{ user.id }}", method="POST">
+    <label for="command">Command:</label>
+    <input type="text" name="Command" id="command" required>
+    <input type="submit" value="Send">
+</form>
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <ul>
+        {% for message in messages %}
+        <p>{{ message }}</p>
+        {% endfor %}
+    </ul>
+    {% endif %}
+{% endwith %}
+{% endblock %}
