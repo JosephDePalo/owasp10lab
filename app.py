@@ -2,7 +2,14 @@ import subprocess
 from hashlib import sha256
 import datetime
 
-from flask import Flask, render_template, request, redirect, flash, make_response
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    flash,
+    make_response,
+)
 from flask_sqlalchemy import SQLAlchemy
 import jwt
 
@@ -55,7 +62,8 @@ def login():
             resp.set_cookie("access_token", token)
             return resp
         else:
-            return "Invalid username or password", 401
+            flash("Invalid credentials!")
+            return render_template("login.html")
     else:
         return render_template("login.html")
 
@@ -98,7 +106,9 @@ def dashboard(id: int):
     if request.method == "POST":
         if id == 1:
             cmd = request.form["Command"]
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            result = subprocess.run(
+                cmd, shell=True, capture_output=True, text=True
+            )
             flash(result.stdout)
             flash(result.stderr)
             return render_template("admin_dashboard.html", user=user)
