@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "owasp10lab"
+version = "0.1.0"
+author = [
+    {name = "Joseph DePalo", email = "jdepalo@proton.me"}
+]
+description = "OWASP Top 10 demonstration app"
+readme = "README.md"
+license = "MIT"
+dependencies = [
+    "blinker==1.9.0",
+    "click==8.2.1",
+    "Flask==3.1.1",
+    "Flask-SQLAlchemy==3.1.1",
+    "greenlet==3.2.3",
+    "itsdangerous==2.2.0",
+    "Jinja2==3.1.6",
+    "MarkupSafe==3.0.2",
+    "PyJWT==2.10.1",
+    "SQLAlchemy==2.0.41",
+    "typing_extensions==4.14.1",
+    "Werkzeug==3.1.3"
+]
+
+[project.urls]
+Homepage = "https://github.com/josephdepalo/owasp10lab"
+
+[tool.ruff]
+line-length = 79
+
